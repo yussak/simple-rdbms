@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"simpledb/lexer"
+	"simple-rdbms/lexer"
 	"testing"
 )
 

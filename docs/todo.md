@@ -4,7 +4,7 @@
 
 Phase 0 の途中。`CREATE TABLE` と `SELECT` は、SQL の字句解析・構文解析からメモリ上の実行までつながっている。
 `INSERT` は未実装で、SELECT のテストデータは Go のコードで直接登録している。
-`go run .` はまだ `simpledb: hello` を表示するだけで、SQL を入力する CLI はない。
+`go run .` はまだ `simple-rdbms: hello` を表示するだけで、SQL を入力する CLI はない。
 
 行の値は現在すべて文字列で保持している。`CREATE TABLE` で指定した `INT` / `TEXT` は構文解析できるが、テーブルには型情報を保持していない。
 
@@ -69,6 +69,7 @@ Phase 0 の途中。`CREATE TABLE` と `SELECT` は、SQL の字句解析・構�
 ## 開発環境の整備
 
 - [x] 開発指示を `AGENTS.md`、スキルを `.agents/skills` に移行し、除外設定を更新する
+- [x] プロジェクト名・Go モジュール名・実行時の表示を `simple-rdbms` に統一する
 
 ## 検討中のアイデア
 

@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"simpledb/lexer"
-	"simpledb/parser"
+	"simple-rdbms/lexer"
+	"simple-rdbms/parser"
 	"testing"
 )
 
