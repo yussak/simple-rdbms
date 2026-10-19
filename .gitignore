@@ -10,5 +10,5 @@
 .idea/
 .vscode/
 
-# Claude Code の作業用領域（ミス記録などの一時メモ）
-.claude/workspace/
+# エージェントの作業用領域（ミス記録などの一時メモ）
+.agents/workspace/
