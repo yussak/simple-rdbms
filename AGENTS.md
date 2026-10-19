@@ -16,8 +16,8 @@ go vet ./...       # 静的解析
 Docker で実行する場合:
 
 ```sh
-docker build -t simpledb .
-docker run --rm simpledb
+docker build -t simple-rdbms .
+docker run --rm simple-rdbms
 ```
 
 ## コーディング規約

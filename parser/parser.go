@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"simpledb/lexer"
+	"simple-rdbms/lexer"
 )
 
 type Parser struct {

@@ -3,5 +3,5 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("simpledb: hello")
+	fmt.Println("simple-rdbms: hello")
 }

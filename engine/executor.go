@@ -2,7 +2,7 @@ package engine
 
 import (
 	"fmt"
-	"simpledb/parser"
+	"simple-rdbms/parser"
 )
 
 type Result struct {
