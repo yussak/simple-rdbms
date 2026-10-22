@@ -1,10 +1,18 @@
 package engine
 
-import "fmt"
+import (
+	"fmt"
+	"simple-rdbms/value"
+)
+
+type Column struct {
+	Name string
+	Type value.Type
+}
 
 type Table struct {
-	Columns []string
-	Rows    [][]string
+	Columns []Column
+	Rows    [][]value.Value
 }
 
 type Database struct {
