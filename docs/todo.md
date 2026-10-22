@@ -6,7 +6,8 @@ Phase 0 の途中。`CREATE TABLE` と `SELECT` は、SQL の字句解析・構�
 `INSERT` は未実装で、SELECT のテストデータは Go のコードで直接登録している。
 `go run .` はまだ `simple-rdbms: hello` を表示するだけで、SQL を入力する CLI はない。
 
-行の値は現在すべて文字列で保持している。`CREATE TABLE` で指定した `INT` / `TEXT` は構文解析できるが、テーブルには型情報を保持していない。
+`CREATE TABLE` で指定した `INT` / `TEXT` は、実行器で内部の型に変換し、列定義に保存する。
+行データと SELECT の結果は `value.Value` で整数・文字列を区別して保持する。テーブルはメモリ上にあり、ファイルへの永続化はまだ行わない。
 
 ## できていること
 
@@ -16,6 +17,7 @@ Phase 0 の途中。`CREATE TABLE` と `SELECT` は、SQL の字句解析・構�
 - [x] 存在しないテーブル・列のエラー処理
 - [x] CREATE TABLE の字句解析・構文解析（`INT` / `TEXT` の列定義）
 - [x] CREATE TABLE の実行（空のメモリテーブル作成）
+- [x] CREATE の列名・列順・型の保存と、SELECT による型付きの値の取得
 - [x] AST の表現方式を決定（[ADR 0002](adr/0002-ast-node-representation.md)）
 
 ## 次の目標：Phase 0 完成
@@ -24,9 +26,9 @@ Phase 0 の途中。`CREATE TABLE` と `SELECT` は、SQL の字句解析・構�
 
 ### 1. 型・値の表現を決める
 
-- [ ] ADR 0003: `INT` / `TEXT` の内部値の表現方式を決定する
-- [ ] テーブルの列定義に型情報を保持する
-- [ ] 行データと検索結果で整数・文字列を区別できるようにする
+- [x] ADR 0003: `INT` / `TEXT` の内部値の表現方式を決定する
+- [x] テーブルの列定義に型情報を保持する
+- [x] 行データと検索結果で整数・文字列を区別できるようにする
 
 ### 2. 最小の INSERT を通す
 

@@ -6,9 +6,7 @@ import (
 	"testing"
 )
 
-// 型の土台が満たすべき仕様を先に定義する。
-// value.Value / TypeInt / TypeText と Column は今後実装する API を前提とする。
-// 未実装のためコンパイルに失敗するが、スキップや代替実装で成功扱いにしない。
+// CREATE による列定義の保存と、SELECT による型付きの値の取得を検証する。
 func TestCreateTablePreservesColumnDefinitions(t *testing.T) {
 	db := NewDatabase()
 	node, err := parse("CREATE TABLE users (name TEXT, id INT, age INT);")
