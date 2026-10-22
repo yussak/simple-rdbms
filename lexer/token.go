@@ -14,6 +14,11 @@ const (
 	TOKEN_CREATE
 	TOKEN_TABLE
 
+	// INSERT 文で使うキーワード
+	TOKEN_INSERT
+	TOKEN_INTO
+	TOKEN_VALUES
+
 	// 識別子（テーブル名、カラム名）
 	TOKEN_IDENT
 
@@ -27,6 +32,10 @@ const (
 	// 型
 	TOKEN_TEXT
 	TOKEN_INT
+
+	// 値
+	TOKEN_INTEGER
+	TOKEN_STRING
 )
 
 type Token struct {

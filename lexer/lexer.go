@@ -10,6 +10,9 @@ var keywords = map[string]TokenType{
 	"FROM":   TOKEN_FROM,
 	"CREATE": TOKEN_CREATE,
 	"TABLE":  TOKEN_TABLE,
+	"INSERT": TOKEN_INSERT,
+	"INTO":   TOKEN_INTO,
+	"VALUES": TOKEN_VALUES,
 	"INT":    TOKEN_INT,
 	"TEXT":   TOKEN_TEXT,
 }
@@ -63,9 +66,14 @@ func (l *Lexer) NextToken() Token {
 		tok := Token{Type: TOKEN_CLOSE, Literal: ")"}
 		l.readChar()
 		return tok
+	case '\'':
+		return l.readString()
 	case 0:
 		return Token{Type: TOKEN_EOF, Literal: ""}
 	default:
+		if l.ch >= '0' && l.ch <= '9' {
+			return l.readNumber()
+		}
 		if unicode.IsLetter(l.ch) || l.ch == '_' {
 			return l.readIdentifier()
 		}
@@ -102,4 +110,35 @@ func (l *Lexer) readIdentifier() Token {
 		return Token{Type: tokType, Literal: upper}
 	}
 	return Token{Type: TOKEN_IDENT, Literal: literal}
+}
+
+func (l *Lexer) readNumber() Token {
+	start := l.pos
+	for l.ch >= '0' && l.ch <= '9' {
+		l.readChar()
+	}
+	return Token{Type: TOKEN_INTEGER, Literal: string(l.input[start:l.pos])}
+}
+
+func (l *Lexer) readString() Token {
+	start := l.pos
+	var value strings.Builder
+	l.readChar() // 開く引用符を消費する
+	for {
+		switch l.ch {
+		case 0:
+			return Token{Type: TOKEN_ILLEGAL, Literal: string(l.input[start:l.pos])}
+		case '\'':
+			l.readChar()
+			if l.ch != '\'' {
+				return Token{Type: TOKEN_STRING, Literal: value.String()}
+			}
+			// 連続する二つの引用符は、文字列内の一つの引用符として扱う。
+			value.WriteRune('\'')
+			l.readChar()
+		default:
+			value.WriteRune(l.ch)
+			l.readChar()
+		}
+	}
 }
