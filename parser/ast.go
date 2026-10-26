@@ -1,5 +1,7 @@
 package parser
 
+import "simple-rdbms/value"
+
 // ADR-0002: interface + 具象構造体方式
 
 type Node interface {
@@ -19,6 +21,13 @@ type CreateStatement struct {
 }
 
 func (s *CreateStatement) nodeType() string { return "CREATE" }
+
+type InsertStatement struct {
+	Table  string
+	Values []value.Value
+}
+
+func (s *InsertStatement) nodeType() string { return "INSERT" }
 
 type ColumnDef struct {
 	ColumnName string

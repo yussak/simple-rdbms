@@ -2,7 +2,10 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
+
 	"simple-rdbms/lexer"
+	"simple-rdbms/value"
 )
 
 type Parser struct {
@@ -21,6 +24,12 @@ func (p *Parser) Parse() (Node, error) {
 		return p.parseSelect()
 	case lexer.TOKEN_CREATE:
 		return p.parseCreate()
+	case lexer.TOKEN_INSERT:
+		stmt, err := p.parseInsert()
+		if err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	default:
 		return nil, fmt.Errorf("予期しないトークン: %q", tok.Literal)
 	}
@@ -74,6 +83,67 @@ func (p *Parser) parseCreate() (*CreateStatement, error) {
 	}
 
 	return &CreateStatement{ColumnDef: columnDef, Table: table}, nil
+}
+
+func (p *Parser) parseInsert() (*InsertStatement, error) {
+	p.advance() // INSERT を消費
+	if err := p.expect(lexer.TOKEN_INTO); err != nil {
+		return nil, err
+	}
+	table, err := p.expectIdent()
+	if err != nil {
+		return nil, err
+	}
+	if err := p.expect(lexer.TOKEN_VALUES); err != nil {
+		return nil, err
+	}
+	if err := p.expect(lexer.TOKEN_OPEN); err != nil {
+		return nil, err
+	}
+
+	first, err := p.parseValue()
+	if err != nil {
+		return nil, err
+	}
+	values := []value.Value{first}
+	for p.current().Type == lexer.TOKEN_COMMA {
+		p.advance()
+		v, err := p.parseValue()
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, v)
+	}
+	if err := p.expect(lexer.TOKEN_CLOSE); err != nil {
+		return nil, err
+	}
+
+	// 単一行の INSERT として文末まで読み切る。
+	if p.current().Type == lexer.TOKEN_SEMICOLON {
+		p.advance()
+	}
+	if err := p.expect(lexer.TOKEN_EOF); err != nil {
+		return nil, err
+	}
+	return &InsertStatement{Table: table, Values: values}, nil
+}
+
+func (p *Parser) parseValue() (value.Value, error) {
+	tok := p.current()
+	switch tok.Type {
+	case lexer.TOKEN_INTEGER:
+		n, err := strconv.ParseInt(tok.Literal, 10, 64)
+		if err != nil {
+			return value.Value{}, fmt.Errorf("不正な整数リテラル %q: %w", tok.Literal, err)
+		}
+		p.advance()
+		return value.Value{Type: value.TypeInt, Int: n}, nil
+	case lexer.TOKEN_STRING:
+		p.advance()
+		return value.Value{Type: value.TypeText, Text: tok.Literal}, nil
+	default:
+		return value.Value{}, fmt.Errorf("値が必要ですが %q が来ました", tok.Literal)
+	}
 }
 
 // CREATE TABLE users (id INT, name TEXT);

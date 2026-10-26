@@ -57,10 +57,6 @@ func TestCreateTableNotImplemented(t *testing.T) {
 	t.Skip("未実装: CREATE TABLE のパース")
 }
 
-func TestInsertNotImplemented(t *testing.T) {
-	t.Skip("未実装: INSERT のパース")
-}
-
 func TestCreateTable(t *testing.T) {
 	tokens := lexer.New("CREATE TABLE users (id INT, name TEXT);").Tokenize()
 	node, err := New(tokens).Parse()
