@@ -11,8 +11,6 @@ import (
 )
 
 func TestInsertSelectRoundTrip(t *testing.T) {
-	t.Skip("未実装: INSERT の字句解析・構文解析・実行。実装後に解除する")
-
 	db := engine.NewDatabase()
 	executeSQL(t, db, "CREATE TABLE users (id INT, name TEXT);")
 	executeSQL(t, db, "INSERT INTO users VALUES (1, 'Alice');")
@@ -35,8 +33,6 @@ func TestInsertSelectRoundTrip(t *testing.T) {
 }
 
 func TestInsertDistinguishesIntegerAndText(t *testing.T) {
-	t.Skip("未実装: INSERT の字句解析・構文解析・実行。実装後に解除する")
-
 	db := engine.NewDatabase()
 	executeSQL(t, db, "CREATE TABLE users (id INT, name TEXT);")
 	executeSQL(t, db, "INSERT INTO users VALUES (1, '1');")
@@ -50,8 +46,6 @@ func TestInsertDistinguishesIntegerAndText(t *testing.T) {
 }
 
 func TestInsertRejectsUnknownTable(t *testing.T) {
-	t.Skip("未実装: INSERT の字句解析・構文解析・実行。実装後に解除する")
-
 	db := engine.NewDatabase()
 	executeSQL(t, db, "CREATE TABLE users (id INT, name TEXT);")
 	executeSQL(t, db, "INSERT INTO users VALUES (1, 'Alice');")
@@ -98,8 +92,6 @@ func TestInsertRejectsInvalidRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("未実装: INSERT と列数・型の検証。実装後に解除する")
-
 			db := engine.NewDatabase()
 			executeSQL(t, db, "CREATE TABLE users (id INT, name TEXT);")
 			executeSQL(t, db, "INSERT INTO users VALUES (1, 'Alice');")

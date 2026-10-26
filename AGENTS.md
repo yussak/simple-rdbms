@@ -38,6 +38,8 @@ docker run --rm simple-rdbms
 - `engine.Column` は列名と型を一組で持ち、テーブルの列定義はその順序付きスライスで保持する。
 - CREATE の AST にある型名文字列は、実行器で内部型へ変換してからテーブルに保存する。
 - 行データと SELECT の結果は `[][]value.Value` とする。設計判断は `docs/adr/0003-typed-values-and-columns.md` に記載する。
+- INSERT は単一行・全列を対象に、列の定義順で列数と型を検証する。暗黙の型変換は行わない。
+- INSERT は全検証の成功後に値のスライスをコピーして行を追加し、失敗時は既存データを変更しない。
 
 ## 進め方
 

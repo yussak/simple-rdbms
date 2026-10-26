@@ -12,19 +12,21 @@ type Result struct {
 }
 
 func Execute(db *Database, node parser.Node) (*Result, error) {
-	switch stmt := node.(type) {
+	switch statement := node.(type) {
 	case *parser.SelectStatement:
-		return executeSelect(db, stmt)
+		return executeSelect(db, statement)
 	case *parser.CreateStatement:
-		return executeCreate(db, stmt)
+		return executeCreate(db, statement)
+	case *parser.InsertStatement:
+		return executeInsert(db, statement)
 	default:
 		return nil, fmt.Errorf("未対応の文: %T", node)
 	}
 }
 
-func executeCreate(db *Database, stmt *parser.CreateStatement) (*Result, error) {
+func executeCreate(db *Database, statement *parser.CreateStatement) (*Result, error) {
 	var columns []Column
-	for _, col := range stmt.ColumnDef {
+	for _, col := range statement.ColumnDef {
 		var columnType value.Type
 		switch col.TypeName {
 		case "INT":
@@ -39,20 +41,50 @@ func executeCreate(db *Database, stmt *parser.CreateStatement) (*Result, error) 
 			Type: columnType,
 		})
 	}
-	db.AddTable(stmt.Table, &Table{
+	db.AddTable(statement.Table, &Table{
 		Columns: columns,
 		Rows:    [][]value.Value{},
 	})
 	return nil, nil
 }
 
-func executeSelect(db *Database, stmt *parser.SelectStatement) (*Result, error) {
-	table, err := db.GetTable(stmt.Table)
+func executeInsert(db *Database, statement *parser.InsertStatement) (*Result, error) {
+	table, err := db.GetTable(statement.Table)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(stmt.Columns) == 1 && stmt.Columns[0] == "*" {
+	if len(statement.Values) != len(table.Columns) {
+		return nil, fmt.Errorf(
+			"テーブル %q の列数が一致しません: 期待=%d, 実際=%d",
+			statement.Table, len(table.Columns), len(statement.Values),
+		)
+	}
+
+	// 同じ位置にある列と値の型を照合する。
+	for i, col := range table.Columns {
+		if statement.Values[i].Type != col.Type {
+			return nil, fmt.Errorf(
+				"テーブル %q のカラム %q の型が一致しません",
+				statement.Table, col.Name,
+			)
+		}
+	}
+
+	// 全検証の成功後、ASTとスライスを共有しない行を保存する。
+	row := make([]value.Value, len(statement.Values))
+	copy(row, statement.Values)
+	table.Rows = append(table.Rows, row)
+	return nil, nil
+}
+
+func executeSelect(db *Database, statement *parser.SelectStatement) (*Result, error) {
+	table, err := db.GetTable(statement.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(statement.Columns) == 1 && statement.Columns[0] == "*" {
 		var names []string
 		for _, col := range table.Columns {
 			names = append(names, col.Name)
@@ -63,7 +95,7 @@ func executeSelect(db *Database, stmt *parser.SelectStatement) (*Result, error) 
 		}, nil
 	}
 
-	indices, err := resolveColumnIndices(table, stmt.Columns)
+	indices, err := resolveColumnIndices(table, statement.Columns)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +110,7 @@ func executeSelect(db *Database, stmt *parser.SelectStatement) (*Result, error) 
 	}
 
 	return &Result{
-		Columns: stmt.Columns,
+		Columns: statement.Columns,
 		Rows:    rows,
 	}, nil
 }
