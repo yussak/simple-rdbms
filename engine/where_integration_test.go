@@ -61,7 +61,8 @@ func TestWhereSelect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := newWhereDB(t, true)
-			defer checkWhereTableUnchanged(t, db)()
+			before := snapshotTable(t, db)
+			defer assertTableUnchanged(t, db, before)
 			columns := tt.columns
 			if columns == nil {
 				columns = []string{"id", "name"}
@@ -74,14 +75,16 @@ func TestWhereSelect(t *testing.T) {
 func TestWherePreservesDuplicateRows(t *testing.T) {
 	db := newWhereDB(t, true)
 	executeSQL(t, db, "INSERT INTO users VALUES (2, 'Bob');")
-	defer checkWhereTableUnchanged(t, db)()
+	before := snapshotTable(t, db)
+	defer assertTableUnchanged(t, db, before)
 	assertWhereResult(t, executeSQL(t, db, "SELECT * FROM users WHERE id = 2;"),
 		[]string{"id", "name"}, [][]value.Value{whereRow(2, "Bob"), whereRow(2, "Bob")})
 }
 
 func TestWhereEmptyTable(t *testing.T) {
 	db := newWhereDB(t, false)
-	defer checkWhereTableUnchanged(t, db)()
+	before := snapshotTable(t, db)
+	defer assertTableUnchanged(t, db, before)
 	assertWhereResult(t, executeSQL(t, db, "SELECT * FROM users WHERE id = 1 OR name = 'Alice';"), []string{"id", "name"}, nil)
 	assertWhereResult(t, executeSQL(t, db, "SELECT name FROM users WHERE id = 1;"), []string{"name"}, nil)
 }
@@ -179,7 +182,8 @@ func TestWhereRejectsInvalidConditions(t *testing.T) {
 		} {
 			t.Run(fmt.Sprintf("行あり=%t/%s", populated, condition), func(t *testing.T) {
 				db := newWhereDB(t, populated)
-				defer checkWhereTableUnchanged(t, db)()
+				before := snapshotTable(t, db)
+				defer assertTableUnchanged(t, db, before)
 				sql := "SELECT * FROM users WHERE " + condition + ";"
 				node, err := parser.New(lexer.New(sql).Tokenize()).Parse()
 				if err != nil {
@@ -195,7 +199,8 @@ func TestWhereRejectsInvalidConditions(t *testing.T) {
 
 func TestWhereRejectsUnknownTable(t *testing.T) {
 	db := newWhereDB(t, true)
-	defer checkWhereTableUnchanged(t, db)()
+	before := snapshotTable(t, db)
+	defer assertTableUnchanged(t, db, before)
 	node, err := parser.New(lexer.New("SELECT * FROM missing WHERE id = 1;").Tokenize()).Parse()
 	if err != nil {
 		t.Fatalf("パースエラー: %v", err)
@@ -238,26 +243,29 @@ func assertWhereResult(t *testing.T, got *engine.Result, columns []string, rows 
 	}
 }
 
-// 元データをコピーしてから、成功・失敗を問わず検索後に変更がないことを確認する。
-func checkWhereTableUnchanged(t *testing.T, db *engine.Database) func() {
+// 比較用にテーブルの列定義と各行をコピーする。
+func snapshotTable(t *testing.T, db *engine.Database) engine.Table {
 	t.Helper()
 	table, err := db.GetTable("users")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := engine.Table{Columns: slices.Clone(table.Columns), Rows: slices.Clone(table.Rows)}
-	for i := range want.Rows {
-		want.Rows[i] = slices.Clone(want.Rows[i])
+	snapshot := engine.Table{Columns: slices.Clone(table.Columns), Rows: slices.Clone(table.Rows)}
+	for i := range snapshot.Rows {
+		snapshot.Rows[i] = slices.Clone(snapshot.Rows[i])
 	}
-	return func() {
-		t.Helper()
-		got, err := db.GetTable("users")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(*got, want) {
-			t.Error("SELECT により保存済みのテーブルが変更された")
-		}
+	return snapshot
+}
+
+// 現在のテーブルが保存した状態から変更されていないことを確認する。
+func assertTableUnchanged(t *testing.T, db *engine.Database, before engine.Table) {
+	t.Helper()
+	got, err := db.GetTable("users")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(*got, before) {
+		t.Error("SELECT により保存済みのテーブルが変更された")
 	}
 }
 
