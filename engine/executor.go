@@ -84,6 +84,11 @@ func executeSelect(db *Database, statement *parser.SelectStatement) (*Result, er
 		return nil, err
 	}
 
+	matchedRows, err := filterRows(table, statement.Where)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(statement.Columns) == 1 && statement.Columns[0] == "*" {
 		var names []string
 		for _, col := range table.Columns {
@@ -91,7 +96,7 @@ func executeSelect(db *Database, statement *parser.SelectStatement) (*Result, er
 		}
 		return &Result{
 			Columns: names,
-			Rows:    table.Rows,
+			Rows:    matchedRows,
 		}, nil
 	}
 
@@ -101,7 +106,7 @@ func executeSelect(db *Database, statement *parser.SelectStatement) (*Result, er
 	}
 
 	var rows [][]value.Value
-	for _, row := range table.Rows {
+	for _, row := range matchedRows {
 		var picked []value.Value
 		for _, idx := range indices {
 			picked = append(picked, row[idx])

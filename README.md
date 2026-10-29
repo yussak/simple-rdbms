@@ -9,7 +9,7 @@
 - `value`: `INT` / `TEXT` の内部型と、型付きの値を定義する。
 - `engine`: 列名と型を持つメモリ上のテーブル、および CREATE / INSERT / SELECT の実行を担当する。
 
-SELECT の WHERE は比較演算子・AND / OR・括弧の構文解析に対応し、条件の AST を生成する。条件の評価・行の絞り込みは未実装。対応範囲は [WHERE の仕様](docs/specs/where.md) に記載する。
+SELECT の WHERE は比較演算子・AND / OR・括弧に対応し、フルスキャンで条件に合う行を取得する。列の存在と比較する値の型は、行の走査前に条件全体で検証する。対応範囲は [WHERE の仕様](docs/specs/where.md) に記載する。
 
 CREATE の型名は実行器で内部型に変換し、SELECT は値と型を保持して返す。
 INSERT は単一行・全列に対応し、列の定義順に型付きの値を保存する。
