@@ -8,6 +8,9 @@ import (
 var keywords = map[string]TokenType{
 	"SELECT": TOKEN_SELECT,
 	"FROM":   TOKEN_FROM,
+	"WHERE":  TOKEN_WHERE,
+	"AND":    TOKEN_AND,
+	"OR":     TOKEN_OR,
 	"CREATE": TOKEN_CREATE,
 	"TABLE":  TOKEN_TABLE,
 	"INSERT": TOKEN_INSERT,
@@ -46,6 +49,28 @@ func (l *Lexer) NextToken() Token {
 	l.skipWhitespace()
 
 	switch l.ch {
+	case '=':
+		l.readChar()
+		return Token{Type: TOKEN_EQUAL, Literal: "="}
+	case '<':
+		l.readChar()
+		switch l.ch {
+		case '=':
+			l.readChar()
+			return Token{Type: TOKEN_LESS_EQUAL, Literal: "<="}
+		case '>':
+			l.readChar()
+			return Token{Type: TOKEN_NOT_EQUAL, Literal: "<>"}
+		default:
+			return Token{Type: TOKEN_LESS_THAN, Literal: "<"}
+		}
+	case '>':
+		l.readChar()
+		if l.ch == '=' {
+			l.readChar()
+			return Token{Type: TOKEN_GREATER_EQUAL, Literal: ">="}
+		}
+		return Token{Type: TOKEN_GREATER_THAN, Literal: ">"}
 	case ',':
 		tok := Token{Type: TOKEN_COMMA, Literal: ","}
 		l.readChar()

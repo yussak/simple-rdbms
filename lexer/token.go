@@ -9,6 +9,9 @@ const (
 	// SELECT 文で使うキーワード
 	TOKEN_SELECT
 	TOKEN_FROM
+	TOKEN_WHERE
+	TOKEN_AND
+	TOKEN_OR
 
 	// CREATE 文で使うキーワード
 	TOKEN_CREATE
@@ -28,6 +31,14 @@ const (
 	TOKEN_SEMICOLON // ;
 	TOKEN_OPEN      // (
 	TOKEN_CLOSE     // )
+
+	// 比較演算子
+	TOKEN_EQUAL         // =
+	TOKEN_NOT_EQUAL     // <>
+	TOKEN_LESS_THAN     // <
+	TOKEN_LESS_EQUAL    // <=
+	TOKEN_GREATER_THAN  // >
+	TOKEN_GREATER_EQUAL // >=
 
 	// 型
 	TOKEN_TEXT
