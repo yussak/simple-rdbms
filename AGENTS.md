@@ -40,6 +40,9 @@ docker run --rm simple-rdbms
 - 行データと SELECT の結果は `[][]value.Value` とする。設計判断は `docs/adr/0003-typed-values-and-columns.md` に記載する。
 - INSERT は単一行・全列を対象に、列の定義順で列数と型を検証する。暗黙の型変換は行わない。
 - INSERT は全検証の成功後に値のスライスをコピーして行を追加し、失敗時は既存データを変更しない。
+- SELECT の `Where` は、比較・AND・OR の構造体で表す条件の木を保持する。WHERE がなければ `nil` とする。
+- 条件の比較演算子は `parser.ComparisonOperator` とし、レキサーのトークン種別とは分ける。
+- 条件の構文解析では列名と型付きの値を保持し、列の存在確認と型の照合は実行器で行う。条件の評価は未実装。
 
 ## 進め方
 

@@ -11,6 +11,7 @@ type Node interface {
 type SelectStatement struct {
 	Columns []string // カラム名のリスト。"*" の場合は ["*"]
 	Table   string
+	Where   Condition // WHERE がなければ nil
 }
 
 func (s *SelectStatement) nodeType() string { return "SELECT" }
@@ -33,3 +34,42 @@ type ColumnDef struct {
 	ColumnName string
 	TypeName   string
 }
+
+// Condition は WHERE の比較条件と論理条件を表す。
+type Condition interface {
+	conditionType() string
+}
+
+type ComparisonOperator uint8
+
+const (
+	ComparisonInvalid ComparisonOperator = iota
+	ComparisonEqual
+	ComparisonNotEqual
+	ComparisonLessThan
+	ComparisonLessEqual
+	ComparisonGreaterThan
+	ComparisonGreaterEqual
+)
+
+type ComparisonCondition struct {
+	Column   string
+	Operator ComparisonOperator
+	Value    value.Value
+}
+
+func (c *ComparisonCondition) conditionType() string { return "COMPARISON" }
+
+type AndCondition struct {
+	Left  Condition
+	Right Condition
+}
+
+func (c *AndCondition) conditionType() string { return "AND" }
+
+type OrCondition struct {
+	Left  Condition
+	Right Condition
+}
+
+func (c *OrCondition) conditionType() string { return "OR" }
