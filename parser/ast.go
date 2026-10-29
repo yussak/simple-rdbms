@@ -30,6 +30,13 @@ type InsertStatement struct {
 
 func (s *InsertStatement) nodeType() string { return "INSERT" }
 
+type DeleteStatement struct {
+	Table string
+	Where Condition // WHERE がなければ nil
+}
+
+func (s *DeleteStatement) nodeType() string { return "DELETE" }
+
 type ColumnDef struct {
 	ColumnName string
 	TypeName   string

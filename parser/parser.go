@@ -34,6 +34,12 @@ func (p *Parser) Parse() (Node, error) {
 			return nil, err
 		}
 		return stmt, nil
+	case lexer.TOKEN_DELETE:
+		stmt, err := p.parseDelete()
+		if err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	default:
 		return nil, fmt.Errorf("予期しないトークン: %q", tok.Literal)
 	}
@@ -142,6 +148,35 @@ func (p *Parser) parseInsert() (*InsertStatement, error) {
 		return nil, err
 	}
 	return &InsertStatement{Table: table, Values: values}, nil
+}
+
+func (p *Parser) parseDelete() (*DeleteStatement, error) {
+	p.advance() // DELETE を消費
+	if err := p.expect(lexer.TOKEN_FROM); err != nil {
+		return nil, err
+	}
+	table, err := p.expectIdent()
+	if err != nil {
+		return nil, err
+	}
+
+	var condition Condition
+	if p.current().Type == lexer.TOKEN_WHERE {
+		p.advance()
+		condition, err = p.parseOrCondition()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 条件や文末の余分な入力を読み捨てず、文全体を検証する。
+	if p.current().Type == lexer.TOKEN_SEMICOLON {
+		p.advance()
+	}
+	if err := p.expect(lexer.TOKEN_EOF); err != nil {
+		return nil, err
+	}
+	return &DeleteStatement{Table: table, Where: condition}, nil
 }
 
 func (p *Parser) parseValue() (value.Value, error) {
