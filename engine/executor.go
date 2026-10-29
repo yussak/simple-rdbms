@@ -19,6 +19,8 @@ func Execute(db *Database, node parser.Node) (*Result, error) {
 		return executeCreate(db, statement)
 	case *parser.InsertStatement:
 		return executeInsert(db, statement)
+	case *parser.DeleteStatement:
+		return executeDelete(db, statement)
 	default:
 		return nil, fmt.Errorf("未対応の文: %T", node)
 	}
@@ -75,6 +77,36 @@ func executeInsert(db *Database, statement *parser.InsertStatement) (*Result, er
 	row := make([]value.Value, len(statement.Values))
 	copy(row, statement.Values)
 	table.Rows = append(table.Rows, row)
+	return nil, nil
+}
+
+func executeDelete(db *Database, statement *parser.DeleteStatement) (*Result, error) {
+	table, err := db.GetTable(statement.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	// WHERE がなければ全行削除する。
+	if statement.Where == nil {
+		table.Rows = nil
+		return nil, nil
+	}
+
+	// 空テーブルでも、削除前に条件全体を検証する。
+	condition, err := prepareCondition(table, statement.Where)
+	if err != nil {
+		return nil, err
+	}
+
+	// 条件に一致しない行だけを新しいスライスに残す。
+	remaining := make([][]value.Value, 0, len(table.Rows))
+	for _, row := range table.Rows {
+		if !condition.matches(row) {
+			remaining = append(remaining, row)
+		}
+	}
+
+	table.Rows = remaining
 	return nil, nil
 }
 

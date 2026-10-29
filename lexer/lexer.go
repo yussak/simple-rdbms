@@ -16,6 +16,7 @@ var keywords = map[string]TokenType{
 	"INSERT": TOKEN_INSERT,
 	"INTO":   TOKEN_INTO,
 	"VALUES": TOKEN_VALUES,
+	"DELETE": TOKEN_DELETE,
 	"INT":    TOKEN_INT,
 	"TEXT":   TOKEN_TEXT,
 }
