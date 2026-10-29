@@ -21,7 +21,11 @@ func (p *Parser) Parse() (Node, error) {
 	tok := p.current()
 	switch tok.Type {
 	case lexer.TOKEN_SELECT:
-		return p.parseSelect()
+		stmt, err := p.parseSelect()
+		if err != nil {
+			return nil, err
+		}
+		return stmt, nil
 	case lexer.TOKEN_CREATE:
 		return p.parseCreate()
 	case lexer.TOKEN_INSERT:
@@ -52,12 +56,24 @@ func (p *Parser) parseSelect() (*SelectStatement, error) {
 		return nil, err
 	}
 
+	var condition Condition
+	if p.current().Type == lexer.TOKEN_WHERE {
+		p.advance()
+		condition, err = p.parseOrCondition()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// セミコロンがあれば消費する（なくてもよい）
 	if p.current().Type == lexer.TOKEN_SEMICOLON {
 		p.advance()
 	}
+	if err := p.expect(lexer.TOKEN_EOF); err != nil {
+		return nil, err
+	}
 
-	return &SelectStatement{Columns: columns, Table: table}, nil
+	return &SelectStatement{Columns: columns, Table: table, Where: condition}, nil
 }
 
 func (p *Parser) parseCreate() (*CreateStatement, error) {
