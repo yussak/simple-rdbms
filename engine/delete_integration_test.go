@@ -12,8 +12,6 @@ import (
 )
 
 func TestDeleteSelectRoundTrip(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	alice := whereRow(1, "Alice")
 	bob := whereRow(2, "Bob")
 	alice3 := whereRow(3, "Alice")
@@ -57,8 +55,6 @@ func TestDeleteSelectRoundTrip(t *testing.T) {
 }
 
 func TestDeleteRemovesAllMatchingDuplicates(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	db := newWhereDB(t, true)
 	executeSQL(t, db, "INSERT INTO users VALUES (2, 'Bob');")
 	executeSQL(t, db, "INSERT INTO users VALUES (4, 'Carol');")
@@ -68,8 +64,6 @@ func TestDeleteRemovesAllMatchingDuplicates(t *testing.T) {
 }
 
 func TestDeleteEmptyTable(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	for _, sql := range []string{"DELETE FROM users;", "DELETE FROM users WHERE id = 1 OR name = 'Alice';"} {
 		t.Run(sql, func(t *testing.T) {
 			db := newWhereDB(t, false)
@@ -80,8 +74,6 @@ func TestDeleteEmptyTable(t *testing.T) {
 }
 
 func TestDeleteThenInsert(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	for _, sql := range []string{"DELETE FROM users WHERE id = 2;", "DELETE FROM users WHERE id >= 1;", "DELETE FROM users;"} {
 		t.Run(sql, func(t *testing.T) {
 			db := newWhereDB(t, true)
@@ -103,8 +95,6 @@ func TestDeleteThenInsert(t *testing.T) {
 }
 
 func TestDeleteRejectsInvalidConditionsWithoutChanges(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	for _, populated := range []bool{false, true} {
 		for _, condition := range []string{
 			"missing = 1", "id = '2'", "name = 2",
@@ -132,8 +122,6 @@ func TestDeleteRejectsInvalidConditionsWithoutChanges(t *testing.T) {
 }
 
 func TestDeleteRejectsUnknownTableWithoutChanges(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	for _, sql := range []string{"DELETE FROM missing;", "DELETE FROM missing WHERE id = 1;"} {
 		t.Run(sql, func(t *testing.T) {
 			db := newWhereDB(t, true)
@@ -154,8 +142,6 @@ func TestDeleteRejectsUnknownTableWithoutChanges(t *testing.T) {
 }
 
 func TestDeleteRejectsInvalidSyntaxWithoutChanges(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	for _, sql := range []string{
 		"DELETE users;", "DELETE FROM;", "DELETE FROM users WHERE;",
 		"DELETE FROM users WHERE id =;", "DELETE FROM users WHERE id = 1 OR;",
@@ -182,8 +168,6 @@ func TestDeleteRejectsInvalidSyntaxWithoutChanges(t *testing.T) {
 }
 
 func TestDeletePreservesPreviousSelectResults(t *testing.T) {
-	t.Skip("未実装: DELETE の字句解析・構文解析・実行")
-
 	db := newWhereDB(t, true)
 	before := snapshotTable(t, db)
 	all := executeSQL(t, db, "SELECT * FROM users;")
