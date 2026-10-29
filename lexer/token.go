@@ -22,6 +22,9 @@ const (
 	TOKEN_INTO
 	TOKEN_VALUES
 
+	// DELETE 文で使うキーワード
+	TOKEN_DELETE
+
 	// 識別子（テーブル名、カラム名）
 	TOKEN_IDENT
 
