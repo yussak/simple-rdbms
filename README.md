@@ -20,4 +20,4 @@ SQL 入力用 CLI・ファイル永続化は未実装。実装状況は [TODO.md
 
 ## 文章の推敲
 
-[yomiyasu](https://github.com/nanaism/yomiyasu) を Codex 用スキルとして `.agents/skills/yomiyasu/` に配置している。日本語の文章を推敲したいときは、対象の文章やファイルを示して「yomiyasu で推敲して」と依頼する。
+[yomiyasu](https://github.com/nanaism/yomiyasu) を Codex 用スキルとして `.agents/skills/yomiyasu/` に配置している。このリポジトリでは、日本語の文章を含む Markdown や HTML などの成果物を作成・更新したとき、提出前に毎回 `yomiyasu` で本文を推敲・検査する。個別に文章を推敲したいときは、対象の文章やファイルを示して「yomiyasu で推敲して」と依頼する。
