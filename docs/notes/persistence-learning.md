@@ -24,7 +24,7 @@ SELECT の AST（テーブル名、選択列、WHERE）
 - CREATE は AST の型名 `INT` / `TEXT` を内部型へ変換し、新しい `Table` をマップに登録する。同名テーブルを拒否する処理はまだなく、既存の登録を上書きする（`engine/executor.go` の `executeCreate`）。
 - INSERT は列数と型を全て検証した後、AST の値スライスをコピーして `Rows` に追加する（`executeInsert`）。
 - SELECT は `Rows` を読み、WHERE があれば走査中に絞り、`*` または指定列の結果を組み立てる（`executeSelect`、`engine/condition.go` の `filterRows`）。
-- 現在の結合テストは同じ `Database` インスタンスで CREATE → INSERT → SELECT を確認している。新しいインスタンスから読むテストはまだない（`engine/insert_integration_test.go`）。
+- `engine/insert_integration_test.go` は同じ `Database` インスタンスで CREATE → INSERT → SELECT を確認する。別のインスタンスで開き直す結合テストも追加したが、開閉APIが未実装のため `t.Skip` としている（`engine/persistence_integration_test.go`）。
 
 現在はファイルを開く処理がないため、`NewDatabase()` を再度呼ぶと空のマップができ、前のテーブル定義と行は見つからない。最初の永続化では、両方を保存・復元する経路が必要になる。
 
@@ -44,11 +44,11 @@ SELECT の AST（テーブル名、選択列、WHERE）
   → ページ内の行を取り出し、列定義に従って値として解釈する
 ```
 
-これは PostgreSQL の保存構造から整理した流れであり、起動時のカタログ読み込み順や内部の呼び出し手順を示すものではない。現段階では、カタログ自身を起動時にどう見つけるか、ページの正確なバイト配置、WAL・キャッシュの詳細は調べない。
+これは PostgreSQL の保存構造から整理した流れであり、起動時のカタログ読み込み順や内部の呼び出し手順を示すものではない。この調査では、カタログ自身を起動時に見つける方法、ページの正確なバイト配置、WAL・キャッシュの詳細までは扱っていない。
 
 ## 最初のゴールを1行でたどる
 
-このプロジェクトで `CREATE TABLE users (id INT, name TEXT);`、`INSERT INTO users VALUES (1, 'Alice');` を実行する場合に、永続化後に必要となる流れを示す。これは**動作の図**であり、カタログやデータページをどのファイルに置くかはまだ決めない。
+このプロジェクトで `CREATE TABLE users (id INT, name TEXT);`、`INSERT INTO users VALUES (1, 'Alice');` を実行する場合に、永続化後に必要となる流れを示す。この図は動作の順序を示し、ファイル構成は[永続化の設計](../design/persistence.md)に記録する。
 
 ```text
 CREATE TABLE users (id INT, name TEXT)
@@ -71,10 +71,10 @@ SELECT * FROM users
   → Columns: [id, name], Rows: [[1, Alice]] を返す
 ```
 
-開き直した後の SELECT が成功するには、**列定義**と**行**の両方を読み出せる必要がある。さらに、列定義からそのテーブルの行の保存先をたどれる必要がある。ページのバイト配置やファイル分割は、この図だけでは確定しない。
+開き直した後の SELECT が成功するには、列定義と行の両方を読み出せる必要がある。さらに、列定義からそのテーブルの行の保存先をたどれる必要がある。ページのバイト配置は、この図だけでは確定しない。
 
 ## 実装中に調べる問い
 
-- 列定義と行の保存先を、どのファイル・ページに分けるか。
+- 列定義と行を、それぞれのファイルのどのページに置くか。
 - ページ内で行の位置と長さをどう表すか。
 - 型付きの INT・TEXT をどのバイト列に変換するか。
