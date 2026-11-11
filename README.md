@@ -17,3 +17,7 @@ CREATE の型名は実行器で内部型に変換し、SELECT は値と型を保
 INSERT は単一行・全列に対応し、列の定義順に型付きの値を保存する。
 テーブル不在・列数不一致・型不一致はエラーとし、失敗時は既存データを変更しない。暗黙の型変換は行わない。
 SQL 入力用 CLI・ファイル永続化は未実装。実装状況は [docs/todo.md](docs/todo.md)、永続化の設計は [docs/design/persistence.md](docs/design/persistence.md)、型の設計は [ADR 0003](docs/adr/0003-typed-values-and-columns.md) に記載する。
+
+## 文章の推敲
+
+[yomiyasu](https://github.com/nanaism/yomiyasu) を Codex 用スキルとして `.agents/skills/yomiyasu/` に配置している。日本語の文章を推敲したいときは、対象の文章やファイルを示して「yomiyasu で推敲して」と依頼する。
