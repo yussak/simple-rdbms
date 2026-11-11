@@ -48,7 +48,7 @@ filterRows は一致した行を取得するための関数なので、DELETE �
 - [x] 失敗前後のデータを比較し、一切変更されないことを確認する。
 - [x] CREATE → INSERT → DELETE → SELECT、および削除後の再 INSERT を結合テストで確認する。
 - [x] 既存の SELECT 結果を DELETE が書き換えないことを確認する。
-- [x] 実装に合わせて README、AGENTS.md、docs/todo.md を更新する。
+- [x] 実装に合わせて README、AGENTS.md、TODO.md を更新する。
 - [x] gofmt、go test -v ./...、go build -buildvcs=false ./...、go vet ./... を実行する。
 
 今回の実行器の中心は「条件全体の検証 → 残す行の収集 → 置き換え」。
