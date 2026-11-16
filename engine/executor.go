@@ -97,12 +97,19 @@ func executeInsert(db *Database, statement *parser.InsertStatement) (*Result, er
 }
 
 func executeDelete(db *Database, statement *parser.DeleteStatement) (*Result, error) {
-	if db.store != nil {
-		return nil, fmt.Errorf("永続DBでのDELETEは未対応です")
-	}
 	table, err := db.GetTable(statement.Table)
 	if err != nil {
 		return nil, err
+	}
+	if db.store != nil {
+		var condition rowCondition
+		if statement.Where != nil {
+			condition, err = prepareCondition(table, statement.Where)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, db.deletePersistentRows(table, condition)
 	}
 
 	// WHERE がなければ全行削除する。

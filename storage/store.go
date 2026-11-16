@@ -212,6 +212,66 @@ func (s *Store) Append(id int64, row []byte) (retErr error) {
 	return nil
 }
 
+// DeleteWhere は全ページの条件評価を終えてから、該当ページを書き戻す。
+// 書き戻し途中のI/O失敗やクラッシュによる部分更新は、この段階では復旧しない。
+func (s *Store) DeleteWhere(id int64, match func([]byte) (bool, error)) (deleted int, retErr error) {
+	if err := s.checkOpen(); err != nil {
+		return 0, err
+	}
+	f, err := os.OpenFile(s.relationPath(id), os.O_RDWR, 0)
+	if err != nil {
+		return 0, fmt.Errorf("relation %d を開けません: %w", id, err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("relation %d を閉じられません: %w", id, err))
+		}
+	}()
+	info, err := f.Stat()
+	if err != nil {
+		return 0, fmt.Errorf("relation %d を調べられません: %w", id, err)
+	}
+	if info.Size()%PageSize != 0 {
+		return 0, fmt.Errorf("relation %d のサイズがページ長の倍数ではありません", id)
+	}
+	type changedPage struct {
+		offset int64
+		page   *Page
+	}
+	var changed []changedPage
+	for offset := int64(0); offset < info.Size(); offset += PageSize {
+		buf := make([]byte, PageSize)
+		if _, err := f.ReadAt(buf, offset); err != nil {
+			return 0, fmt.Errorf("relation %d のページを読めません: %w", id, err)
+		}
+		page, err := ParsePage(buf)
+		if err != nil {
+			return 0, fmt.Errorf("relation %d のページ %d: %w", id, offset/PageSize, err)
+		}
+		count, err := page.MarkDeleted(match)
+		if err != nil {
+			return 0, fmt.Errorf("relation %d のページ %d: %w", id, offset/PageSize, err)
+		}
+		if count > 0 {
+			deleted += count
+			changed = append(changed, changedPage{offset: offset, page: page})
+		}
+	}
+	for _, item := range changed {
+		if n, err := f.WriteAt(item.page.Bytes(), item.offset); err != nil {
+			return 0, fmt.Errorf("relation %d のページを書けません: %w", id, err)
+		} else if n != PageSize {
+			return 0, fmt.Errorf("relation %d のページを最後まで書けません", id)
+		}
+	}
+	if len(changed) > 0 {
+		if err := f.Sync(); err != nil {
+			return 0, fmt.Errorf("relation %d を同期できません: %w", id, err)
+		}
+	}
+	return deleted, nil
+}
+
 func (s *Store) Close() error {
 	if err := s.checkOpen(); err != nil {
 		return err

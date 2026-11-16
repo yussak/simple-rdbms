@@ -86,23 +86,72 @@ func TestPersistentDatabaseAcrossPages(t *testing.T) {
 		t.Fatal(err)
 	}
 	reopened, closeReopened := openPersistentDatabase(t, path)
-	defer closeReopened()
 	assertQueryResult(t, reopened, "SELECT * FROM notes;", want)
+	executeSQL(t, reopened, "DELETE FROM notes WHERE id = 19;")
+	if err := closeReopened(); err != nil {
+		t.Fatal(err)
+	}
+	reopenedAgain, closeAgain := openPersistentDatabase(t, path)
+	defer closeAgain()
+	want.Rows = want.Rows[:19]
+	assertQueryResult(t, reopenedAgain, "SELECT * FROM notes;", want)
 }
 
 func TestPersistentDeleteAfterReopen(t *testing.T) {
-	t.Skip("永続DBでのDELETEは未実装")
 	path := filepath.Join(t.TempDir(), "test.db")
 	db, closeDB := openPersistentDatabase(t, path)
 	executeSQL(t, db, "CREATE TABLE notes (id INT);")
 	executeSQL(t, db, "INSERT INTO notes VALUES (1);")
+	executeSQL(t, db, "INSERT INTO notes VALUES (2);")
 	executeSQL(t, db, "DELETE FROM notes WHERE id = 1;")
 	if err := closeDB(); err != nil {
 		t.Fatal(err)
 	}
 	reopened, closeReopened := openPersistentDatabase(t, path)
+	assertQueryResult(t, reopened, "SELECT * FROM notes;", &engine.Result{
+		Columns: []string{"id"},
+		Rows:    [][]value.Value{{{Type: value.TypeInt, Int: 2}}},
+	})
+	executeSQL(t, reopened, "DELETE FROM notes;")
+	if err := closeReopened(); err != nil {
+		t.Fatal(err)
+	}
+	reopenedAgain, closeAgain := openPersistentDatabase(t, path)
+	defer closeAgain()
+	assertQueryResult(t, reopenedAgain, "SELECT * FROM notes;", &engine.Result{Columns: []string{"id"}, Rows: [][]value.Value{}})
+	executeSQL(t, reopenedAgain, "INSERT INTO notes VALUES (3);")
+	assertQueryResult(t, reopenedAgain, "SELECT * FROM notes;", &engine.Result{
+		Columns: []string{"id"},
+		Rows:    [][]value.Value{{{Type: value.TypeInt, Int: 3}}},
+	})
+}
+
+func TestPersistentDeleteRejectsInvalidConditionWithoutChange(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	db, closeDB := openPersistentDatabase(t, path)
+	executeSQL(t, db, "CREATE TABLE notes (id INT);")
+	executeSQL(t, db, "INSERT INTO notes VALUES (1);")
+	for _, sql := range []string{
+		"DELETE FROM notes WHERE missing = 1;",
+		"DELETE FROM notes WHERE id = 'wrong';",
+	} {
+		node, err := parser.New(lexer.New(sql).Tokenize()).Parse()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := engine.Execute(db, node); err == nil {
+			t.Fatalf("不正な条件を受け入れた: %s", sql)
+		}
+	}
+	if err := closeDB(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, closeReopened := openPersistentDatabase(t, path)
 	defer closeReopened()
-	assertQueryResult(t, reopened, "SELECT * FROM notes;", &engine.Result{Columns: []string{"id"}})
+	assertQueryResult(t, reopened, "SELECT * FROM notes;", &engine.Result{
+		Columns: []string{"id"},
+		Rows:    [][]value.Value{{{Type: value.TypeInt, Int: 1}}},
+	})
 }
 
 func openPersistentDatabase(t *testing.T, path string) (*engine.Database, func() error) {

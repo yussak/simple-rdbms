@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"encoding/binary"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -90,5 +91,37 @@ func TestOpenRejectsCorruptControl(t *testing.T) {
 	}
 	if _, err := storage.Open(path); err == nil {
 		t.Fatal("壊れたCONTROLを受け入れた")
+	}
+}
+
+func TestDeleteWhereLeavesRowsUntouchedWhenLaterPageFails(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "db")
+	s, err := storage.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if err := s.CreateRelation(3); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 20; i++ {
+		if err := s.Append(3, []byte(strings.Repeat("x", 1000))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	seen := 0
+	_, err = s.DeleteWhere(3, func([]byte) (bool, error) {
+		seen++
+		if seen == 10 {
+			return false, errors.New("判定エラー")
+		}
+		return true, nil
+	})
+	if err == nil {
+		t.Fatal("判定エラーを返さなかった")
+	}
+	rows, err := s.ReadAll(3)
+	if err != nil || len(rows) != 20 {
+		t.Fatalf("失敗時に行が変わった: count=%d err=%v", len(rows), err)
 	}
 }

@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	PageSize   = 8192
-	headerSize = 8
-	slotSize   = 4
-	pageMagic  = 0x31474150 // "PAG1" をリトルエンディアンで格納する。
+	PageSize           = 8192
+	headerSize         = 8
+	slotSize           = 4
+	pageMagic          = 0x31474150 // "PAG1" をリトルエンディアンで格納する。
+	deletedMask uint16 = 1 << 15
 )
 
 // Page は固定長ページ内の行の配置を管理する。
@@ -53,7 +54,12 @@ func (p *Page) bounds() (int, int) {
 
 func (p *Page) slot(i int) (int, int) {
 	start := headerSize + i*slotSize
-	return int(binary.LittleEndian.Uint16(p.data[start : start+2])), int(binary.LittleEndian.Uint16(p.data[start+2 : start+4]))
+	return int(binary.LittleEndian.Uint16(p.data[start : start+2])), int(binary.LittleEndian.Uint16(p.data[start+2:start+4]) &^ deletedMask)
+}
+
+func (p *Page) slotDeleted(i int) bool {
+	start := headerSize + i*slotSize + 2
+	return binary.LittleEndian.Uint16(p.data[start:start+2])&deletedMask != 0
 }
 
 func (p *Page) CanAppend(length int) bool {
@@ -79,12 +85,43 @@ func (p *Page) Rows() [][]byte {
 	lower, _ := p.bounds()
 	rows := make([][]byte, 0, (lower-headerSize)/slotSize)
 	for i := 0; i < (lower-headerSize)/slotSize; i++ {
+		if p.slotDeleted(i) {
+			continue
+		}
 		offset, length := p.slot(i)
 		row := make([]byte, length)
 		copy(row, p.data[offset:offset+length])
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// MarkDeleted は条件に合う行の項目識別子に削除フラグを立てる。
+// 条件の評価が失敗した場合は、このページを変更しない。
+func (p *Page) MarkDeleted(match func([]byte) (bool, error)) (int, error) {
+	lower, _ := p.bounds()
+	var targets []int
+	for i := 0; i < (lower-headerSize)/slotSize; i++ {
+		if p.slotDeleted(i) {
+			continue
+		}
+		offset, length := p.slot(i)
+		row := make([]byte, length)
+		copy(row, p.data[offset:offset+length])
+		matched, err := match(row)
+		if err != nil {
+			return 0, err
+		}
+		if matched {
+			targets = append(targets, i)
+		}
+	}
+	for _, i := range targets {
+		start := headerSize + i*slotSize + 2
+		length := binary.LittleEndian.Uint16(p.data[start : start+2])
+		binary.LittleEndian.PutUint16(p.data[start:start+2], length|deletedMask)
+	}
+	return len(targets), nil
 }
 
 func (p *Page) Bytes() []byte { return p.data[:] }

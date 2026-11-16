@@ -181,3 +181,18 @@ func (db *Database) readPersistentRows(table *Table) ([][]value.Value, error) {
 	}
 	return rows, nil
 }
+
+func (db *Database) deletePersistentRows(table *Table, condition rowCondition) error {
+	types := make([]value.Type, len(table.Columns))
+	for i, col := range table.Columns {
+		types[i] = col.Type
+	}
+	_, err := db.store.DeleteWhere(table.relationID, func(raw []byte) (bool, error) {
+		row, err := storage.DecodeRow(types, raw)
+		if err != nil {
+			return false, err
+		}
+		return condition == nil || condition.matches(row), nil
+	})
+	return err
+}
