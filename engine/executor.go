@@ -12,6 +12,9 @@ type Result struct {
 }
 
 func Execute(db *Database, node parser.Node) (*Result, error) {
+	if db.closed {
+		return nil, fmt.Errorf("DBは既に閉じています")
+	}
 	switch statement := node.(type) {
 	case *parser.SelectStatement:
 		return executeSelect(db, statement)
@@ -43,6 +46,12 @@ func executeCreate(db *Database, statement *parser.CreateStatement) (*Result, er
 			Type: columnType,
 		})
 	}
+	if db.store != nil {
+		if err := db.createPersistentTable(statement.Table, columns); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
 	db.AddTable(statement.Table, &Table{
 		Columns: columns,
 		Rows:    [][]value.Value{},
@@ -73,6 +82,13 @@ func executeInsert(db *Database, statement *parser.InsertStatement) (*Result, er
 		}
 	}
 
+	if db.store != nil {
+		if err := db.insertPersistentRow(table, statement.Values); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	// 全検証の成功後、ASTとスライスを共有しない行を保存する。
 	row := make([]value.Value, len(statement.Values))
 	copy(row, statement.Values)
@@ -81,6 +97,9 @@ func executeInsert(db *Database, statement *parser.InsertStatement) (*Result, er
 }
 
 func executeDelete(db *Database, statement *parser.DeleteStatement) (*Result, error) {
+	if db.store != nil {
+		return nil, fmt.Errorf("永続DBでのDELETEは未対応です")
+	}
 	table, err := db.GetTable(statement.Table)
 	if err != nil {
 		return nil, err
@@ -114,6 +133,19 @@ func executeSelect(db *Database, statement *parser.SelectStatement) (*Result, er
 	table, err := db.GetTable(statement.Table)
 	if err != nil {
 		return nil, err
+	}
+
+	if db.store != nil {
+		if statement.Where != nil {
+			if _, err := prepareCondition(table, statement.Where); err != nil {
+				return nil, err
+			}
+		}
+		rows, err := db.readPersistentRows(table)
+		if err != nil {
+			return nil, err
+		}
+		table = &Table{Columns: table.Columns, Rows: rows}
 	}
 
 	matchedRows, err := filterRows(table, statement.Where)
