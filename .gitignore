@@ -12,3 +12,4 @@
 
 # エージェントの作業用領域
 .agents/workspace/
+.codex/

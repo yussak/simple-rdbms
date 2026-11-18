@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"simple-rdbms/storage"
 	"simple-rdbms/value"
 )
 
@@ -11,12 +12,16 @@ type Column struct {
 }
 
 type Table struct {
-	Columns []Column
-	Rows    [][]value.Value
+	Columns    []Column
+	Rows       [][]value.Value
+	relationID int64
 }
 
 type Database struct {
-	tables map[string]*Table
+	tables         map[string]*Table
+	store          *storage.Store
+	closed         bool
+	nextRelationID int64
 }
 
 func NewDatabase() *Database {
@@ -28,6 +33,9 @@ func (db *Database) AddTable(name string, table *Table) {
 }
 
 func (db *Database) GetTable(name string) (*Table, error) {
+	if db.closed {
+		return nil, fmt.Errorf("DBは既に閉じています")
+	}
 	t, ok := db.tables[name]
 	if !ok {
 		return nil, fmt.Errorf("テーブル %q が見つかりません", name)
